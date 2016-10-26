@@ -22,31 +22,43 @@ public class Transferer {
   }
 
 
-
-
   public Node readLocal(ZooKeeperPath path) {
     return read(localClient, path);
   }
 
-  //  Node readRemote(ZooKeeperPath path) {
-  //    return read(REMOTE_SERVER, path);
-  //  }
 
+  void push(ZooKeeperPath path) {
+    copy(localClient, remoteClient, path);
+  }
 
   // For testing. We only ever push values.
   void pull(ZooKeeperPath path) {
+    copy(remoteClient, localClient, path);
+  }
+
+
+  private void copy(CuratorFramework from, CuratorFramework to, ZooKeeperPath path) {
     try {
       LOG.info(String.format("Pulling: %s", path));
-      Node node = readLocal(path);
+      Node node = read(from, path);
       if (node == null) {
         throw new SyncException("No node for path: " + path);
       }
 
       remoteClient.setData().forPath("/settings/test", node.getData());
 
-      verify(node, path);
+      verify(to, node, path);
     } catch (Exception e) {
       throw new SyncException(e);
+    }
+  }
+
+
+  private void verify(CuratorFramework to, Node expected, ZooKeeperPath path) {
+    Node updatedNode = read(to, path);
+
+    if (!Arrays.equals(updatedNode.getData(), expected.getData())) {
+      throw new SyncException("New value not written to: " + path);
     }
   }
 
@@ -58,15 +70,6 @@ public class Transferer {
       return root;
     } catch (Exception e) {
       throw new SyncException(e);
-    }
-  }
-
-
-  private void verify(Node fromNode, ZooKeeperPath path) {
-    Node updatedNode = read(remoteClient, path);
-
-    if (!Arrays.equals(updatedNode.getData(), fromNode.getData())) {
-      throw new SyncException("New value not written to: " + path);
     }
   }
 
@@ -88,10 +91,5 @@ public class Transferer {
     } catch (Exception e) {
       throw new SyncException(e);
     }
-  }
-
-
-  private static String toSource(String server, ZooKeeperPath path) {
-    return server + ":2181/warden/" + path.path; // todo Dupe stuff.
   }
 }
