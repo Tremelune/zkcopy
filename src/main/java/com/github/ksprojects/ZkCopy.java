@@ -1,10 +1,17 @@
 package com.github.ksprojects;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.log4j.Logger;
+
 import com.github.ksprojects.zkcopy.Node;
 import com.github.ksprojects.zkcopy.reader.Reader;
 import com.github.ksprojects.zkcopy.writer.Writer;
-import org.apache.commons.cli.*;
-import org.apache.log4j.Logger;
 
 public class ZkCopy {
 
@@ -59,16 +66,31 @@ public class ZkCopy {
             if (!line.hasOption(SOURCE) || !line.hasOption(TARGET)) {
                 return null;
             }
-            String sourceValue = getString(line, SOURCE);
-            String targetValue = getString(line, TARGET);
-            int workersValue = getInteger(line, WORKERS, DEFAULT_THREADS_NUMBER);
-            boolean copyOnlyValue = getBoolean(line, TARGET, !DEFAULT_REMOVE_DEPRECATED_NODES);
-            return ImmutableConfiguration.builder()
-                    .source(sourceValue)
-                    .target(targetValue)
-                    .workers(workersValue)
-                    .copyOnly(copyOnlyValue)
-                    .build();
+            final String sourceValue = getString(line, SOURCE);
+            final String targetValue = getString(line, TARGET);
+            final int workersValue = getInteger(line, WORKERS, DEFAULT_THREADS_NUMBER);
+            final boolean copyOnlyValue = getBoolean(line, TARGET, !DEFAULT_REMOVE_DEPRECATED_NODES);
+            return new Configuration() {
+                @Override
+                public String source() {
+                    return sourceValue;
+                }
+
+                @Override
+                public String target() {
+                    return targetValue;
+                }
+
+                @Override
+                public int workers() {
+                    return workersValue;
+                }
+
+                @Override
+                public boolean copyOnly() {
+                    return copyOnlyValue;
+                }
+            };
         } catch (ParseException exp) {
             LOGGER.error("Could not parse options.  Reason: " + exp.getMessage());
             return null;
@@ -146,19 +168,34 @@ public class ZkCopy {
     }
 
     private static Configuration parseLegacyConfiguration() {
-        String sourceAddress = getSource();
-        String destinationAddress = getDestination();
+        final String sourceAddress = getSource();
+        final String destinationAddress = getDestination();
         if (sourceAddress == null || destinationAddress == null) {
             return null;
         }
-        int threads = getThreadsNumber();
-        boolean removeDeprecatedNodes = getRemoveDeprecatedNodes();
-        return ImmutableConfiguration.builder()
-                .source(sourceAddress)
-                .target(destinationAddress)
-                .workers(threads)
-                .copyOnly(!removeDeprecatedNodes)
-                .build();
+        final int threads = getThreadsNumber();
+        final boolean removeDeprecatedNodes = getRemoveDeprecatedNodes();
+        return new Configuration() {
+            @Override
+            public String source() {
+                return sourceAddress;
+            }
+
+            @Override
+            public String target() {
+                return destinationAddress;
+            }
+
+            @Override
+            public int workers() {
+                return threads;
+            }
+
+            @Override
+            public boolean copyOnly() {
+                return !removeDeprecatedNodes;
+            }
+        };
     }
 
     private static String getDestination() {
