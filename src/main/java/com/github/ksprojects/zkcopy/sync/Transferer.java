@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.ksprojects.zkcopy.Node;
-import com.github.ksprojects.zkcopy.writer.Writer;
 
 public class Transferer {
   private static final Logger LOG = LoggerFactory.getLogger(Transferer.class);
@@ -23,19 +22,6 @@ public class Transferer {
   }
 
 
-  void copy(String fromServer, String toServer, ZooKeeperPath path) {
-    LOG.info(String.format("Copying %s from %s to %s", path, fromServer, toServer));
-    Node node = readLocal(path);
-    if (node == null) {
-      throw new SyncException("No node on " + fromServer + " for path: " + path);
-    }
-
-    String target = toSource(toServer, path);
-    Writer writer = new Writer(target, node, false);
-    writer.write();
-
-    verify(remoteClient, node, path);
-  }
 
 
   public Node readLocal(ZooKeeperPath path) {
@@ -45,6 +31,25 @@ public class Transferer {
   //  Node readRemote(ZooKeeperPath path) {
   //    return read(REMOTE_SERVER, path);
   //  }
+
+
+  // For testing. We only ever push values.
+  void pull(ZooKeeperPath path) {
+    try {
+      LOG.info(String.format("Pulling: %s", path));
+      Node node = readLocal(path);
+      if (node == null) {
+        throw new SyncException("No node for path: " + path);
+      }
+
+      remoteClient.setData().forPath("/settings/test", node.getData());
+
+      verify(node, path);
+    } catch (Exception e) {
+      throw new SyncException(e);
+    }
+  }
+
 
   private Node read(CuratorFramework client, ZooKeeperPath path) {
     try {
@@ -57,8 +62,8 @@ public class Transferer {
   }
 
 
-  private void verify(CuratorFramework client, Node fromNode, ZooKeeperPath path) {
-    Node updatedNode = read(client, path);
+  private void verify(Node fromNode, ZooKeeperPath path) {
+    Node updatedNode = read(remoteClient, path);
 
     if (!Arrays.equals(updatedNode.getData(), fromNode.getData())) {
       throw new SyncException("New value not written to: " + path);
