@@ -1,5 +1,8 @@
 package com.github.ksprojects.zkcopy.sync;
 
+import static com.github.ksprojects.zkcopy.sync.ZooKeeperPath.FLAGS;
+import static com.github.ksprojects.zkcopy.sync.ZooKeeperPath.SETTINGS;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,13 +30,21 @@ public class Transferer {
   }
 
 
-  void push(ZooKeeperPath path) {
-    copy(localClient, remoteClient, path);
+  void push() {
+    copyAll(localClient, remoteClient);
   }
 
   // For testing. We only ever push values.
-  void pull(ZooKeeperPath path) {
-    copy(remoteClient, localClient, path);
+  void pull() {
+    copyAll(remoteClient, localClient);
+  }
+
+
+  private void copyAll(CuratorFramework from, CuratorFramework to) {
+    LOG.info("Copying flags...");
+    copy(from, to, FLAGS);
+    LOG.info("Copying settings...");
+    copy(from, to, SETTINGS);
   }
 
 

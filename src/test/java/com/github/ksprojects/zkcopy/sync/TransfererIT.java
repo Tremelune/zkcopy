@@ -26,7 +26,7 @@ public class TransfererIT {
     assertEquals(String.valueOf(initial), new String(initialBytes));
 
     Transferer underTest = new Transferer(localClient(), remoteClient());
-    underTest.pull(SETTINGS);
+    underTest.pull();
 
     Node updatedNode = underTest.readLocal(SETTINGS);
     assertNotEquals(new String(updatedNode.getData()), String.valueOf(initial));
