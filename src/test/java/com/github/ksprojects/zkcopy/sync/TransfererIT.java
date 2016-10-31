@@ -21,7 +21,14 @@ public class TransfererIT {
     int initial = new Random().nextInt();
     CuratorFramework curator = localClient();
     byte[] payload = String.valueOf(initial).getBytes();
-    curator.setData().forPath("/settings/test", payload);
+
+    // Set the value, or create it if it doesn't exist yet...
+    if (curator.checkExists().forPath("/settings/test") == null) {
+      curator.create().forPath("/settings/test", payload);
+    } else {
+      curator.setData().forPath("/settings/test", payload);
+    }
+
     byte[] initialBytes = curator.getData().forPath("/settings/test");
     assertEquals(String.valueOf(initial), new String(initialBytes));
 
