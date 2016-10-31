@@ -19,17 +19,23 @@ public class TransfererIT {
   public void testPull() throws Exception {
     // Set a random local value, then overwrite it with whatever is on staging. This avoids messing with staging.
     int initial = new Random().nextInt();
-    CuratorFramework curator = localClient();
+    CuratorFramework localClient = localClient();
     byte[] payload = String.valueOf(initial).getBytes();
 
     // Set the value, or create it if it doesn't exist yet...
-    if (curator.checkExists().forPath("/settings/test") == null) {
-      curator.create().forPath("/settings/test", payload);
+    if (localClient.checkExists().forPath("/settings/test") == null) {
+      localClient.create().forPath("/settings/test", payload);
     } else {
-      curator.setData().forPath("/settings/test", payload);
+      localClient.setData().forPath("/settings/test", payload);
     }
 
-    byte[] initialBytes = curator.getData().forPath("/settings/test");
+    // Make sure staging has this setting...
+    CuratorFramework remoteClient = remoteClient();
+    if (remoteClient.checkExists().forPath("/settings/test") == null) {
+      remoteClient.create().forPath("/settings/test", "testvalue".getBytes()); // Anything is fine
+    }
+
+    byte[] initialBytes = localClient.getData().forPath("/settings/test");
     assertEquals(String.valueOf(initial), new String(initialBytes));
 
     Transferer underTest = new Transferer(localClient(), remoteClient());
