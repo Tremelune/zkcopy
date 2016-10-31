@@ -25,18 +25,18 @@ public class TransfererIT {
     // Set the value, or create it if it doesn't exist yet...
     if (localClient.checkExists().forPath("/settings/test") == null) {
       localClient.create().forPath("/settings/test", payload);
-    } else {
-      localClient.setData().forPath("/settings/test", payload);
     }
+    localClient.setData().forPath("/settings/test", payload);
+
+    byte[] initialBytes = localClient.getData().forPath("/settings/test");
+    assertEquals(String.valueOf(initial), new String(initialBytes));
 
     // Make sure staging has this setting...
     CuratorFramework remoteClient = remoteClient();
     if (remoteClient.checkExists().forPath("/settings/test") == null) {
       remoteClient.create().forPath("/settings/test", "testvalue".getBytes()); // Anything is fine
+      localClient.setData().forPath("/settings/test", "testvalue".getBytes());
     }
-
-    byte[] initialBytes = localClient.getData().forPath("/settings/test");
-    assertEquals(String.valueOf(initial), new String(initialBytes));
 
     Transferer underTest = new Transferer(localClient(), remoteClient());
     underTest.pull();
