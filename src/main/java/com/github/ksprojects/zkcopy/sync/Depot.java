@@ -26,7 +26,7 @@ class Depot {
   synchronized Listener getListener() {
     if (listener == null) {
       LOG.info("Building local listener...");
-      listener = new Listener(getLocalClient());
+      listener = new Listener(getLocalClient(), getTransferer());
     }
 
     return listener;
