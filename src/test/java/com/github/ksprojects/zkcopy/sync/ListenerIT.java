@@ -1,5 +1,6 @@
 package com.github.ksprojects.zkcopy.sync;
 
+import static com.github.kxprojects.zkcopy.TestUtils.localClient;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Random;
@@ -19,9 +20,10 @@ public class ListenerIT {
     underTest.listen();
     assertEquals(0, transferer.pushCount);
 
+    // Here we set a value with the normal "namespaced" client and make sure it triggers a push.
     int initial = new Random().nextInt();
     byte[] payload = String.valueOf(initial).getBytes();
-    localClient.setData().forPath("/warden/settings/test", payload);
+    localClient().setData().forPath("/settings/test", payload);
 
     assertEquals(1, transferer.pushCount);
   }
