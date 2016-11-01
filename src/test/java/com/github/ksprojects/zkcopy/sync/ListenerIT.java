@@ -27,7 +27,7 @@ public class ListenerIT {
   }
 
 
-  // This creates a client with no namespace. to Figure out how to do this in production code.
+  // This creates a client with no namespace.
   private static CuratorFramework newClient(String host) {
     RetryPolicy retryPolicy = (i, l, retrySleeper) -> false;
     CuratorFramework curator = CuratorFrameworkFactory.newClient(host + ":2181", retryPolicy);

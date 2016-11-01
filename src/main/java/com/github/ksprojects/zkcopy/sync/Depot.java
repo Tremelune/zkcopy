@@ -12,10 +12,7 @@ class Depot {
 
   private final SyncConfig config;
 
-  private CuratorFramework localClient;
-  private CuratorFramework remoteClient;
   private Listener listener;
-  private Transferer transferer;
 
 
   Depot(SyncConfig config) {
@@ -25,49 +22,33 @@ class Depot {
 
   synchronized Listener getListener() {
     if (listener == null) {
-      LOG.info("Building local listener...");
-      listener = new Listener(getLocalClient(), getTransferer());
+      listener = newListener();
     }
 
     return listener;
   }
 
+  private Listener newListener() {
+    LOG.info("Building local listener...");
+    CuratorFramework localClient = newNamespacedClient(config.getLocalHost());
+    CuratorFramework remoteClient = newNamespacedClient(config.getRemoteHost());
+    Transferer transferer = new Transferer(localClient, remoteClient);
 
-  synchronized Transferer getTransferer() {
-    if (transferer == null) {
-      LOG.info("Building transferer...");
-      transferer = new Transferer(getLocalClient(), getRemoteClient());
-    }
-
-    return transferer;
+    CuratorFramework client = newClient(config.getLocalHost());
+    return new Listener(client, transferer);
   }
 
 
-  private synchronized CuratorFramework getLocalClient() {
-    if (localClient == null) {
-      LOG.info("Building local client...");
-      localClient = newClient(config.getLocalHost());
-    }
-
-    return localClient;
+  private static CuratorFramework newNamespacedClient(String host) {
+    CuratorFramework curator = newClient(host);
+    return curator.usingNamespace("warden");
   }
-
-
-  private synchronized CuratorFramework getRemoteClient() {
-    if (remoteClient == null) {
-      LOG.info("Building remote client...");
-      remoteClient = newClient(config.getRemoteHost());
-    }
-
-    return remoteClient;
-  }
-
 
   private static CuratorFramework newClient(String host) {
     LOG.info("Building client with host: {}", host);
     RetryPolicy retryPolicy = (i, l, retrySleeper) -> false;
     CuratorFramework curator = CuratorFrameworkFactory.newClient(host + ":2181", retryPolicy);
     curator.start();
-    return curator.usingNamespace("warden");
+    return curator;
   }
 }

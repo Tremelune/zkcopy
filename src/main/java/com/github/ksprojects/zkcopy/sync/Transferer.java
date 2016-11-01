@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.ksprojects.zkcopy.Node;
 
-public class Transferer {
+class Transferer {
   private static final Logger LOG = LoggerFactory.getLogger(Transferer.class);
 
   private final CuratorFramework localClient;
@@ -25,11 +25,6 @@ public class Transferer {
   }
 
 
-  public Node readLocal(ZooKeeperPath path) {
-    return read(localClient, path);
-  }
-
-
   void push() {
     copyAll(localClient, remoteClient);
   }
@@ -37,6 +32,11 @@ public class Transferer {
   // For testing. We only ever push values.
   void pull() {
     copyAll(remoteClient, localClient);
+  }
+
+  // For testing.
+  Node readLocal(ZooKeeperPath path) {
+    return read(localClient, path);
   }
 
 

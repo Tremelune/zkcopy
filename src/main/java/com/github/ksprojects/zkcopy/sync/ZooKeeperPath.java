@@ -1,9 +1,8 @@
 package com.github.ksprojects.zkcopy.sync;
 
-public enum ZooKeeperPath {
+enum ZooKeeperPath {
   FLAGS("flags"),
-  SETTINGS("settings"),
-  TEST("test"); // Only used for testing.
+  SETTINGS("settings");
 
   final String path;
 
