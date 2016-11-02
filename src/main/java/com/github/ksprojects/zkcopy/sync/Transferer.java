@@ -45,18 +45,19 @@ class Transferer {
     copy(from, to, FLAGS);
     LOG.info("Copying settings...");
     copy(from, to, SETTINGS);
+    LOG.info("Transfer complete.");
   }
 
 
   private void copy(CuratorFramework from, CuratorFramework to, ZooKeeperPath path) {
     try {
-      LOG.info(String.format("Pulling: %s", path));
+      LOG.info(String.format("Copying: %s", path));
       Node node = read(from, path);
       if (node == null) {
         throw new SyncException("No node for path: " + path);
       }
 
-      remoteClient.setData().forPath("/settings/test", node.getData());
+      remoteClient.setData().forPath(getPath(node), node.getData());
 
       verify(to, node, path);
     } catch (Exception e) {
@@ -87,7 +88,7 @@ class Transferer {
 
   private void read(CuratorFramework client, Node node) {
     try {
-      String path = "/" + node.getAbsolutePath();
+      String path = getPath(node);
       byte[] data = client.getData().forPath(path);
       node.setData(data);
 
@@ -102,5 +103,10 @@ class Transferer {
     } catch (Exception e) {
       throw new SyncException(e);
     }
+  }
+
+
+  private static String getPath(Node node) {
+    return "/" + node.getAbsolutePath();
   }
 }
