@@ -41,35 +41,52 @@ class Transferer {
 
 
   private void copyAll(CuratorFramework from, CuratorFramework to) {
-    LOG.info("Copying flags...");
     copy(from, to, FLAGS);
-    LOG.info("Copying settings...");
     copy(from, to, SETTINGS);
-    LOG.info("Transfer complete.");
   }
 
 
   private void copy(CuratorFramework from, CuratorFramework to, ZooKeeperPath path) {
     try {
       LOG.info(String.format("Copying: %s", path));
-      Node node = read(from, path);
-      if (node == null) {
-        throw new SyncException("No node for path: " + path);
+      Node root = read(from, path);
+      if (root == null) {
+        throw new SyncException("No root for path: " + path);
       }
 
-      remoteClient.setData().forPath(getPath(node), node.getData());
-
-      verify(to, node, path);
+      copy(from, to, root);
     } catch (Exception e) {
       throw new SyncException(e);
     }
   }
 
 
-  private void verify(CuratorFramework to, Node expected, ZooKeeperPath path) {
-    Node updatedNode = read(to, path);
+  private void copy(CuratorFramework from, CuratorFramework to, Node node) {
+    try {
+      String absolutePath = getPath(node);
+      LOG.info(String.format("Copying: %s", absolutePath));
+      remoteClient.setData().forPath(absolutePath, node.getData());
 
-    if (!Arrays.equals(updatedNode.getData(), expected.getData())) {
+      List<String> children = from.getChildren().forPath(absolutePath);
+      for (String childPath : children) {
+        if (!"zookeeper".equals(childPath)) { // Reserved
+          Node child = new Node(node, childPath);
+          node.appendChild(child);
+          copy(from, to, child); // Recursion!
+          verify(to, node);
+        }
+      }
+    } catch (Exception e) {
+      throw new SyncException(e);
+    }
+  }
+
+
+  private void verify(CuratorFramework to, Node expected) throws Exception {
+    String path = getPath(expected);
+    byte[] updatedData = to.getData().forPath(path);
+
+    if (!Arrays.equals(updatedData, expected.getData())) {
       throw new SyncException("New value not written to: " + path);
     }
   }

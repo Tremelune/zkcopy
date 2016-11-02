@@ -30,11 +30,15 @@ class Depot {
 
   private Listener newListener() {
     LOG.info("Building local listener...");
-    CuratorFramework localClient = newNamespacedClient(config.getLocalHost());
-    CuratorFramework remoteClient = newNamespacedClient(config.getRemoteHost());
+    String localHost = config.getLocalHost();
+    String remoteHost = config.getRemoteHost();
+    CuratorFramework localClient = newNamespacedClient(localHost);
+    CuratorFramework remoteClient = newNamespacedClient(remoteHost);
+
+    LOG.info("Building transferer from %s to %s...", localHost, remoteHost);
     Transferer transferer = new Transferer(localClient, remoteClient);
 
-    CuratorFramework client = newClient(config.getLocalHost());
+    CuratorFramework client = newClient(localHost);
     return new Listener(client, transferer);
   }
 
